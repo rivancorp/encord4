@@ -1,0 +1,785 @@
+Ex-1:
+create a detailed cisco configuration example using CoPP feature where we limit 
+ftp traffic with 10 percent and web traffic with 40% and voip traffic with 50% and
+drop icmp and ssh traffic. permit all other traffic.
+
+config t
+! First, create a policy map to define the classes of traffic and their corresponding actions.
+ip access-list extended FTP
+ permit tcp any any eq ftp
+
+ip access-list extended WEB
+ permit tcp any any eq www
+
+ip access-list extended VOIP
+ permit udp any any range 16384 32767
+
+ip access-list extended ICMP
+ permit icmp any any
+
+ip access-list extended SSH
+ permit tcp any any eq 22
+
+!
+class-map match-all FTP
+ match access-group name FTP
+
+class-map match-all WEB
+ match access-group name WEB
+
+class-map match-all VOIP
+ match access-group name VOIP
+
+class-map match-all ICMP
+ match access-group name ICMP
+
+class-map match-all SSH
+ match access-group name SSH
+
+!
+no policy-map COPP
+policy-map COPP
+ class FTP
+  police cir percent 10
+   conform-action transmit
+   exceed-action drop
+ class WEB
+  police cir percent 40
+   conform-action transmit
+   exceed-action drop
+ class VOIP
+  police cir percent 50
+   conform-action transmit
+   exceed-action drop
+ class ICMP
+  police rate 10 pps conform-action transmit exceed-action drop
+ !class SSH
+  !drop
+ class class-default
+  police 1200000 conform-action transmit exceed-action transmit 
+
+!
+control-plane
+service-policy input COPP
+end
+
+
+
+
+Ex0:Here is a detailed example of configuring Class-Based Policy Control (CoPP) 
+in a Cisco router to limit FTP traffic to 10%, web traffic to 40%, 
+VoIP traffic to 50% and drop torrent traffic
+
+! First, create a policy map to define the classes of traffic and their corresponding actions.
+ip access-list extended FTP
+ permit tcp any any eq ftp
+
+ip access-list extended WEB
+ permit tcp any any eq www
+
+ip access-list extended VOIP
+ permit udp any any range 16384 32767
+
+ip access-list extended TORRENT
+ deny tcp any any range 6881 6999
+
+!
+class-map match-all FTP
+ match access-group name FTP
+
+class-map match-all WEB
+ match access-group name WEB
+
+class-map match-all VOIP
+ match access-group name VOIP
+
+class-map match-all TORRENT
+ match access-group name TORRENT
+
+!
+policy-map COPP
+ class FTP
+  police cir 10
+   conform-action transmit
+   exceed-action drop
+ class WEB
+  police cir 40
+   conform-action transmit
+   exceed-action drop
+ class VOIP
+  police cir 50
+   conform-action transmit
+   exceed-action drop
+ class TORRENT
+  drop
+
+!
+interface GigabitEthernet0/0
+ service-policy input COPP
+
+
+Ex1:
+create a detailed cisco configuration example using CoPP feature where we limit 
+torrent traffic with 10 percent and web traffic with 40% and voip traffic with 50%
+
+! First, configure the device's control plane to use the appropriate queueing mechanism. 
+! This example uses the custom queueing mechanism, but other options are available.
+
+class-map match-all torrent
+ match access-group name torrent-acl
+
+class-map match-all web
+ match access-group name web-acl
+
+class-map match-all voip
+ match access-group name voip-acl
+
+! Create access control lists to match the desired traffic types. 
+! In this example, the lists are named "torrent-acl", "web-acl", and "voip-acl". 
+! The actual contents of these lists will depend on the specific traffic you want to match.
+
+access-list torrent-acl permit tcp any any range 6881 6890
+access-list torrent-acl permit udp any any range 6881 6890
+
+access-list web-acl permit tcp any host www.example.com eq 80
+access-list web-acl permit tcp any host www.example.com eq 443
+
+access-list voip-acl permit udp any any range 16384 32767
+
+! Create policy maps to limit the bandwidth for each traffic type.
+! The "bandwidth percent" command sets the desired percentage of total bandwidth. 
+! The "service-policy output" command applies the policy map to the control plane.
+
+policy-map copp-policy
+ class torrent
+  bandwidth percent 10
+ class web
+  bandwidth percent 40
+ class voip
+  bandwidth percent 50
+
+control-plane
+ service-policy input copp-policy
+
+! Apply the control plane policy to the device's interfaces as desired. 
+! This example applies the policy to all interfaces.
+
+interface range gigabitEthernet 2
+ service-policy input copp-policy
+
+
+Ex2:
+create an cisco eem script that will automatically delete the flash 
+of a cisco device and reboot when the user types the command "hostname"
+
+event manager applet auto-delete-flash-and-reboot
+ event cli pattern "hostname" sync no skip yes
+ action 1.0 cli command "delete /force /recursive flash:"
+ action 2.0 syslog msg "Deleting flash and rebooting the device..."
+ action 3.0 reload
+
+
+To install the script, copy and paste the above configuration 
+into the device's configuration mode and then enter the following command:
+
+event manager run auto-delete-flash-and-reboot
+
+
+Ex3:
+Here is an example of an EEM (Embedded Event Manager) script for a Cisco IOS device that will 
+automatically send an email to rivancorp@gmail.com when either the loopback interface shuts down 
+or when a user types the command "erase start":
+
+config t
+no event manager applet email-alert
+event manager applet email-alert
+ event syslog pattern "Loopback0.*down"
+  action 1.0 mail server "smtp.gmail.com" to "rivancorp@gmail.com" subject "Loopback Interface Down Alert" body "The Loopback0 interface on Router X has shut down."
+ event cli pattern "erase start" sync no
+  action 2.0 mail server "smtp.gmail.com" to "rivancorp@gmail.com" subject "Erase Start Command Alert" body "The command 'erase start' has been executed on Router X."
+
+
+event manager run email-alert
+
+Ex4:
+create a detailed cisco configuration example using CoPP feature where we limit traffic to pornhub.com and iyottube.com
+to 5% while allowing 95% traffic to prayers.com
+
+config t
+! Define a class map for the restricted sites
+class-map match-any restricted-sites
+ match access-group name pornhub-iyottube
+
+! Define an access list for pornhub.com and iyottube.com
+ip access-list extended pornhub-iyottub
+ permit tcp any host pornhub.com eq www
+ permit tcp any host iyottube.com eq www
+
+! Define a class map for the allowed site
+class-map match-any allowed-site
+ match access-group name prayers
+
+! Define an access list for prayers.com
+ip access-list extended prayers
+ permit tcp any host prayers.com eq www
+
+! Define a policy map to limit the restricted sites to 5% of the available bandwidth
+policy-map limit-restricted
+ class restricted-sites
+  police cir 5000000
+  conform-action transmit
+  exceed-action drop
+
+! Define a policy map to allow 95% of the available bandwidth for the allowed site
+policy-map allow-allowed
+ class allowed-site
+  police cir 95000000
+  conform-action transmit
+  exceed-action drop
+
+! Apply the policy maps to the control plane
+control-plane
+ service-policy input limit-restricted
+ service-policy output allow-allowed
+
+! Apply the policy maps to the loopback interface
+interface Loopback0
+ service-policy input limit-restricted
+ service-policy output allow-allowed
+
+
+In this configuration, we first define a class map named restricted-sites and match it to an access list named pornhub-iyottube
+ that matches traffic to pornhub.com and iyottube.com.
+We then define a class map named allowed-site and match it to an access list named prayers that matches traffic to prayers.com.
+
+Next, we define two policy maps: limit-restricted and allow-allowed. 
+The limit-restricted policy map is applied to the restricted sites and limits the traffic 
+to 5% of the available bandwidth. The allow-allowed policy map is applied to the allowed
+ site and allows 95% of the available bandwidth.
+ 
+ 
+Finally, we apply the policy maps to the control plane and to the loopback interface using the service-policy command. 
+This ensures that all traffic passing through the device is subject to the defined policies.
+
+Ex4:
+create a cisco ios router policy that will load balance between two isp 
+connected in gi 1 and gi 2 for the enterprise internet connection
+
+config t
+! Define two default routes, one for each ISP
+ip route 0.0.0.0 0.0.0.0 192.168.108.2 100
+ip route 0.0.0.0 0.0.0.0 192.168.101.1 200
+
+! Configure IP SLA tracking to monitor the availability of the ISPs
+ip sla 1
+ icmp-echo 8.8.8.8 source-interface GigabitEthernet1
+ip sla schedule 1 life forever start-time now
+ip sla 2
+ icmp-echo 8.8.8.8 source-interface GigabitEthernet2
+ip sla schedule 2 life forever start-time now
+
+! Configure the track objects for the IP SLAs
+track 1 ip sla 1 reachability
+track 2 ip sla 2 reachability
+
+! Configure the default route to use the IP SLA tracking objects
+ip route 0.0.0.0 0.0.0.0 192.168.101.1 200 track 1
+ip route 0.0.0.0 0.0.0.0 192.168.108.2 100 track 2
+
+
+In this configuration, we first define two default routes, one for each ISP. The default route for the first ISP 
+has a higher administrative distance (AD) of 200, while the default route for the second ISP has a lower AD of 100.
+
+Next, we configure IP SLA tracking to monitor the availability of the ISPs by sending ICMP echo requests to
+ 8.8.8.8 (Google's public DNS server) from each of the Gigabit Ethernet interfaces.
+ 
+We then configure two track objects, one for each IP SLA, to track the reachability of the ISPs. Finally, we configure the default 
+route to use the IP SLA tracking objects, so that the router will load balance between the two ISPs based on the availability of each ISP.
+
+
+Ex5:
+Here is an example of a configuration for a Cisco IOS router that implements a Control Plane Policy (CoPP)
+to protect the router against common Denial of Service (DoS) attacks and port scans:
+
+
+config t
+! Enable Control Plane Policing (CoPP) on the router
+control-plane
+ service-policy input CoPP-Policy
+
+! Create the CoPP policy
+policy-map CoPP-Policy
+ class class-default
+  police 10000000 conform-action transmit exceed-action drop
+  ! Limit the amount of total traffic that can be accepted by the router
+  ! The value of 10000000 is just an example and can be adjusted as needed
+
+! Create a class map to match common DoS and port scan attacks
+class-map match-all CoPP-DoS-PortScan
+ match protocol icmp
+ match protocol tcp-udp any eq telnet
+ match protocol tcp-udp any range 135 139
+ match protocol tcp-udp any range 445 514
+ match protocol tcp any range 1 65535 eq ssh
+
+! Apply the class map to the CoPP policy
+policy-map CoPP-Policy
+ class CoPP-DoS-PortScan
+  police 1000000 conform-action transmit exceed-action drop
+  ! Limit the amount of DoS and port scan traffic that can be accepted by the router
+  ! The value of 1000000 is just an example and can be adjusted as needed
+
+
+In this configuration, we enable CoPP on the router and assign a policy to the control plane. The policy, 
+named CoPP-Policy, is a two-class policy that includes a class for matching 
+common DoS and port scan attacks (CoPP-DoS-PortScan) and a default class for matching all other traffic.
+
+The class for DoS and port scan traffic uses the police action to limit the amount of traffic that can be accepted by the router, 
+while the default class uses the police action to limit the overall amount of traffic that can be accepted by the router. 
+The conform-action is set to transmit to allow matched traffic to be 
+forwarded, while the exceed-action is set to drop to drop any traffic that exceeds the specified rate limit.
+
+Ex6:
+create a cisco CoPP policy that will block ping request if it exceeds 500 bytes or more.
+
+Config t
+! Enable Control Plane Policing (CoPP) on the router
+control-plane
+ service-policy input CoPP-Policy
+
+! Create the CoPP policy
+policy-map CoPP-Policy
+ class class-default
+  police 10000000 conform-action transmit exceed-action drop
+  ! Limit the amount of total traffic that can be accepted by the router
+  ! The value of 10000000 is just an example and can be adjusted as needed
+
+! Create a class map to match ICMP packets larger than 500 bytes
+class-map match-all CoPP-Ping
+ match protocol icmp icmp-type echo max-length 500
+
+! Apply the class map to the CoPP policy
+policy-map CoPP-Policy
+ class CoPP-Ping
+  police 1000000 conform-action drop exceed-action drop
+  ! Limit the amount of ping traffic that can be accepted by the router
+  ! The value of 1000000 is just an example and can be adjusted as needed
+
+In this configuration, we enable CoPP on the router and assign a policy to the control plane. The policy, named CoPP-Policy,
+ is a two-class policy that includes a class for matching ICMP packets larger than 500 bytes (CoPP-Ping) 
+ and a default class for matching all other traffic.
+ 
+The class for ping packets uses the police action to limit the amount of traffic that can be accepted by the router, while 
+the default class uses the police action to limit the overall amount of traffic that can be accepted by the router.
+ The conform-action is set to drop to drop any matched traffic,
+ while the exceed-action is also set to drop to drop any traffic that exceeds the specified rate limit.
+ 
+ 
+Ex7:  Here is an example of how to secure the Cisco REST API on a Cisco IOS router:
+
+config t
+! Enable REST API
+rest-api
+
+! Enable the use of HTTPS for the REST API
+rest-api security
+
+! Create a self-signed certificate for HTTPS
+crypto pki trustpoint REST-API-TrustPoint
+ subject-name cn=REST-API-TrustPoint
+ enrollment selfsigned
+ subject-name cn=REST-API-TrustPoint
+ revocation-check none
+ rsakeypair REST-API-TrustPoint
+
+! Enable authentication for the REST API
+rest-api authentication
+
+! Configure the authentication method (in this example, we use local username and password)
+username admin privilege 15 password 0 cisco123
+
+! Enable authorization for the REST API
+rest-api authorization
+
+! Assign the authorization profile to the REST API
+rest-api authorization profile
+
+
+In this configuration, we enable the REST API and configure it to use HTTPS for secure communication.
+ We also create a self-signed certificate, named REST-API-TrustPoint, which is used for encrypting the HTTPS traffic.
+ 
+Next, we enable authentication and authorization for the REST API. In this example,
+we configure local username and password authentication, and assign an authorization profile to the REST API.
+ The authorization profile is used to enforce access control for different API resources, 
+ allowing or denying access based on specific user privileges.
+ 
+Ex8: 
+Here is a step-by-step guide to setting up a Windows Server 2019 Certificate 
+Authority (CA) to issue a digital certificate for a Cisco IOS Router site-to-site VPN:
+
+
+1.Install the Certificate Authority role on Windows Server 2019:
+
+
+-Open the Server Manager, click on "Add roles and features," and follow the prompts to add the Certificate Authority role.
+-Choose the "Stand-alone" option when prompted, and complete the installation process.
+
+
+2. Configure the Windows Server 2019 CA:
+
+-Open the Certificate Authority console, and right-click on "Certificate Templates."
+-Choose "Manage," then "Duplicate Template."
+-Select the "Computer" template, and click on "OK."
+-Name the template "Router VPN Template" and configure the appropriate settings, including the validity period, key size, and encryption algorithm.
+-Click on "OK," then "Close."
+-Right-click on the "Certificate Templates" folder, and choose "New" > "Certificate Template to Issue."
+-Select the "Router VPN Template," and click on "OK."
+
+3. Create a certificate request on the Cisco IOS Router:
+
+Connect to the router through a terminal emulator and enter the following commands:
+
+crypto key generate rsa
+! Configure the size of the RSA key
+crypto key generate rsa modulus 2048
+! Generate the RSA key
+crypto pki trustpoint VPN-TrustPoint
+! Create a trustpoint for the VPN certificate
+enrollment url http://<IP address of the Windows Server 2019 CA>/certsrv/mscep/mscep.dll
+! Specify the URL of the Windows Server 2019 CA
+crypto pki enroll VPN-TrustPoint
+! Initiate the certificate enrollment process
+
+4.Issue the certificate on the Windows Server 2019 CA:
+
+Open the Certificate Authority console, and click on "Pending Requests."
+Right-click on the certificate request from the Cisco IOS Router, and choose "Issue."
+Verify that the request meets your requirements, then click on "Issue."
+
+
+5.Install the issued certificate on the Cisco IOS Router:
+
+Connect to the router through a terminal emulator and enter the following commands:
+
+crypto pki authenticate VPN-TrustPoint
+! Authenticate the trustpoint
+crypto pki trustpoint VPN-TrustPoint
+! Specify the trustpoint for the VPN certificate
+enrollment terminal pem
+! Specify the format of the certificate
+! Cut and paste the contents of the issued certificate into the terminal emulator
+crypto pki trustpoint VPN-TrustPoint
+! Verify the installed certificate
+
+
+6. Configure the site-to-site VPN on the Cisco IOS Router:
+
+Connect to the router through a terminal emulator and enter the appropriate commands to configure the site-to-site VPN. 
+The exact configuration will vary depending on the specific requirements and constraints of your network, but here is an example:
+
+interface Tunnel0
+ip address 10.0.0.1 255.255.255.0
+tunnel source GigabitEthernet0/0
+tunnel destination <IP address of remote VPN endpoint>
+crypto map VPNMap 10 ipsec-isakmp
+crypto map VPNMap 10 match address VPNACL
+crypto map VPNMap 10 set peer
+
+Ex9: 
+make a detailed configuration example of an wireless cisco 802.1x network using cisco 3560 switch,
+aironet 1200 and windows 2019 active directory powershell:
+
+Here is a step-by-step guide to configuring an 802.1X-based wireless network using a Cisco 3560 switch,
+ Aironet 1200 access point, and Windows Server 2019 Active Directory with PowerShell:
+ 
+ 
+1. Configure the Cisco 3560 switch:
+
+config t
+! Create a RADIUS server group for the authentication servers
+radius-server group auth-group
+server <IP address of Windows Server 2019 CA> auth-port 1812 acct-port 1813 key 7 <shared secret>
+! Configure the switch ports for 802.1X authentication
+interface FastEthernet0/1
+switchport mode access
+authentication port-control auto
+authentication host-mode multi-auth
+authentication violation protect
+authentication order dot1x mab
+authentication priority dot1x mab
+authentication event fail action next-method
+authentication periodic
+authentication timer reauthenticate server
+mab
+dot1x pae authenticator
+dot1x timeout tx-period 5
+! Save the configuration
+copy running-config startup-config
+
+2. Configure the Aironet 1200 access point:
+
+! Configure the access point to use the RADIUS server group
+aaa new-model
+aaa group server radius auth-group
+server <IP address of Windows Server 2019 CA> auth-port 1812 acct-port 1813 key 7 <shared secret>
+! Enable 802.1X on the access point
+dot11 ssid <SSID>
+authentication open eap eap_methods
+authentication network-eap <SSID>
+mab
+! Save the configuration
+write memory
+
+
+3. Create a certificate template on Windows Server 2019 CA:
+
+Open the Certificate Authority console, and right-click on "Certificate Templates."
+Choose "Manage," then "Duplicate Template."
+Select the "Computer" template, and click on "OK."
+Name the template "Wireless Client Template" and configure the appropriate settings, including the validity period, key size, and encryption algorithm.
+Enable the "Automatically enroll computer certificates" and "Enroll" permissions for the appropriate user or group.
+Click on "OK," then "Close."
+Right-click on the "Certificate Templates" folder, and choose "New" > "Certificate Template to Issue."
+Select the "Wireless Client Template," and click on "OK."
+
+4. Create a Group Policy Object (GPO) to enroll wireless clients:
+
+Open the Group Policy Management console, and create a new GPO.
+Edit the GPO, and navigate to "Computer Configuration" > "Policies" > "Windows Settings" > "Security Settings" > "Public Key Policies."
+Right-click on "Automatic Certificate Request Settings," and choose "New" > "Automatic Certificate Request."
+Configure the certificate request to use the "Wireless Client Template," and specify the appropriate settings, such as the validity period and key size.
+Link the GPO to the appropriate Organizational Unit (OU) in Active Directory.
+
+5. Enroll wireless clients using PowerShell:
+
+Open a PowerShell prompt
+
+EX10: Here is a step-by-step guide to configuring a Cisco laboratory using TrustSec and MACsec:
+
+1. Create a Security Group Tag (SGT) on a Cisco ISE server:
+
+Log into the ISE web interface and navigate to "Administration" > "Identity Management."
+Click on "Security Group Tag Management" and create a new SGT for the laboratory devices.
+Assign the appropriate SGT to each device in the laboratory.
+Configure a TrustSec policy on a Cisco switch:
+
+2. Connect to the switch through a terminal emulator and enter the following commands:
+
+config t
+! Configure the switch to act as a Security Group Access Switch (SGACL)
+sgt-map domain domain-name
+! Create a security group
+sgt name <security group name> value <value>
+! Configure the switch ports for TrustSec
+interface <interface>
+switchport mode access
+switchport access vlan <VLAN>
+authentication control-direction in
+authentication order dot1x mab
+authentication priority dot1x mab
+authentication event fail action next-method
+authentication periodic
+authentication timer reauthenticate server
+mab
+dot1x pae authenticator
+dot1x timeout tx-period 5
+! Configure the TrustSec policy
+sgt trustsec
+! Apply the TrustSec policy to the interface
+interface <interface>
+sgt <security group name>
+! Save the configuration
+copy running-config startup-config
+
+
+3. Configure a MACsec policy on a Cisco switch:
+
+Connect to the switch through a terminal emulator and enter the following commands:
+ 
+! Configure the switch for MACsec
+macsec
+! Enable MACsec on the interface
+interface <interface>
+macsec
+macsec policy mka
+! Configure the key server for MACsec
+macsec key server key-server-address <address>
+! Apply the MACsec policy to the interface
+interface <interface>
+macsec policy mka
+! Save the configuration
+copy running-config startup-config
+
+
+4. Verify the TrustSec and MACsec policies:
+
+! Verify the TrustSec policy
+show sgt
+! Verify the MACsec policy
+show macsec
+
+This configuration will create a secure network laboratory using TrustSec and MACsec. 
+The devices in the laboratory will be authenticated using 802.1X, and will be assigned a
+ Security Group Tag (SGT) by the ISE server. The switch will act as 
+ a Security Group Access Control List (SGACL) and will enforce the TrustSec 
+ policy by allowing or blocking network traffic based on the SGT assigned to each device. 
+The switch will also enforce the MACsec policy, which will provide link-layer encryption
+ to secure data transmitted between the switch and the connected devices.
+ 
+EX11: Here's an example of a Cisco Embedded Event Manager (EEM) configuration 
+that automatically creates multiple VLANs based on user input:
+
+event manager applet create-vlans
+event cli pattern "create-vlans [0-9]+" sync no default
+action 1.0 cli command "enable"
+action 2.0 cli command "configure terminal"
+action 3.0 cli scriptlet
+puts "Enter the number of VLANs you want to create:"
+set vlans [gets]
+for {set i 10} {$i < [expr $vlans + 10]} {incr i} {
+  cli command "vlan $i"
+}
+puts "VLANs $vlans have been created."
+end
+action 4.0 cli command "end"
+
+
+In this example, the EEM applet create-vlans is triggered by a CLI command that matches the 
+pattern "create-vlans [0-9]+". When the applet is triggered, it prompts the user to enter 
+the number of VLANs they want to create, reads the user's input,
+ and then creates the specified number of VLANs, starting from VLAN 10. Finally, the applet
+ logs a message to indicate that the VLANs have been created.
+ 
+You can trigger this applet by entering the following CLI command:
+
+create-vlans 5
+
+This will create 5 VLANs, numbered 10 through 14.:
+
+EX12:
+create a JSON containing Cisco hostname, password, ip address, subnet mass, 
+interface description to be used by telnetlib when configuring a Cisco router:
+
+
+{
+  "hostname": "Router1",
+  "password": "secret",
+  "ip_address": "10.0.0.1",
+  "subnet_mask": "255.255.255.0",
+  "interface": {
+    "FastEthernet0/0": {
+      "description": "WAN connection",
+      "ip_address": "10.0.0.2",
+      "subnet_mask": "255.255.255.0"
+    },
+    "FastEthernet0/1": {
+      "description": "LAN connection",
+      "ip_address": "192.168.1.1",
+      "subnet_mask": "255.255.255.0"
+    }
+  }
+}
+
+In this example, the JSON file contains the hostname, password, and IP address of the router,
+ as well as its subnet mask.
+ The interface field is an object that contains information about each of the router's interfaces, 
+ including their descriptions, IP addresses, and subnet masks:
+
+ 
+import json
+import telnetlib
+
+with open("router_config.json") as f:
+    config = json.load(f)
+
+hostname = config["hostname"]
+password = config["password"]
+ip_address = config["ip_address"]
+
+tn = telnetlib.Telnet(ip_address)
+
+tn.read_until(b"Username: ")
+tn.write(hostname.encode('ascii') + b"\n")
+
+tn.read_until(b"Password: ")
+tn.write(password.encode('ascii') + b"\n")
+
+tn.write(b"enable\n")
+tn.write(password.encode('ascii') + b"\n")
+
+tn.write(b"configure terminal\n")
+
+for iface, info in config["interface"].items():
+    tn.write(f"interface {iface}\n".encode('ascii'))
+    tn.write(f"description {info['description']}\n".encode('ascii'))
+    tn.write(f"ip address {info['ip_address']} {info['subnet_mask']}\n".encode('ascii'))
+
+tn.write(b"end\n")
+tn.write(b"exit\n")
+
+print(tn.read_all().decode('ascii'))
+
+In this example, the script reads the contents of the router_config.json file and uses 
+the information contained in the file to configure the router. The script connects to the router using Telnetlib 
+and sends a series of CLI commands to configure the hostname, password, IP address, subnet mask, and interface descriptions.
+
+
+OR:
+
+{
+  "hostname": "admin",
+  "password": "password",
+  "ip_address": "192.168.108.128",
+  "subnet_mask": "255.255.255.0",
+  "interface": {
+    "Gi 2": {
+      "description": "WAN connection",
+      "ip_address": "10.0.0.2",
+      "subnet_mask": "255.255.255.0"
+    },
+    "gi 3": {
+      "description": "LAN connection",
+      "ip_address": "192.168.1.1",
+      "subnet_mask": "255.255.255.0"
+    },
+    "lo 0": {
+        "description": "Looooooo",
+        "ip_address": "192.168.2.1",
+        "subnet_mask": "255.255.255.0"
+    }
+  }
+}
+
+import json
+import telnetlib
+
+with open("router_config.json") as f:
+    config = json.load(f)
+
+hostname = config["hostname"]
+password = config["password"]
+ip_address = config["ip_address"]
+
+tn = telnetlib.Telnet(ip_address)
+
+tn.read_until(b"Username: ")
+tn.write(hostname.encode('ascii') + b"\n")
+
+tn.read_until(b"Password: ")
+tn.write(password.encode('ascii') + b"\n")
+
+tn.write(b"enable\n")
+tn.write(password.encode('ascii') + b"\n")
+
+tn.write(b"configure terminal\n")
+
+for iface, info in config["interface"].items():
+    tn.write(f"interface {iface}\n".encode('ascii'))
+    tn.write(f"description {info['description']}\n".encode('ascii'))
+    tn.write(f"ip address {info['ip_address']} {info['subnet_mask']}\n".encode('ascii'))
+    tn.write(b"no shutdown\n")
+
+tn.write(b"end\n")
+tn.write(b"exit\n")
+
+print(tn.read_all().decode('ascii'))
